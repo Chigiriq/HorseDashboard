@@ -55,6 +55,7 @@ const clickablePlot = (options, type) =>
   });
 
 
+
 const raceMap = (() => {
   const container = document.createElement("div");
   container.style.height = "500px";
@@ -110,25 +111,35 @@ const raceMap = (() => {
 
       // Markers
       courseData.forEach(d => {
-        const isSelected =
-          selection.value?.type === "course" &&
-          selection.value?.value === d.course;
+      const isSelected =
+        selection.value?.type === "course" &&
+        selection.value?.value === d.course;
 
-        const circle = L.circleMarker([d.lat, d.lng], {
-          radius: Math.max(6, Math.sqrt(d.count) * 2.2),
-          color: isSelected ? "#ef4444" : colorScale(d.course),
-          fillColor: isSelected ? "#ef4444" : colorScale(d.course),
-          fillOpacity: 0.65,
-          weight: isSelected ? 3 : 1
-        })
+      const circle = L.circleMarker([d.lat, d.lng], {
+        radius: Math.max(6, Math.sqrt(d.count) * 2.2),
+        color: isSelected ? "#ef4444" : colorScale(d.course),
+        fillColor: isSelected ? "#ef4444" : colorScale(d.course),
+        fillOpacity: 0.65,
+        weight: isSelected ? 3 : 1
+      })
         .bindPopup(`<strong>${d.course}</strong><br>${d.count} races`)
         .addTo(layerGroup);
 
-        circle.on("click", () => {
-          selection.value =
-            isSelected ? null : { type: "course", value: d.course };
-        });
+      circle.on("click", evt => {
+        // mark this click so map-level click doesn't fire a reset
+        evt.originalEvent._clickedCircle = true;
+
+        selection.value =
+          isSelected ? null : { type: "course", value: d.course };
       });
+    });
+
+    // Clicking anywhere else resets filter
+    map.on("click", e => {
+      if (!e.originalEvent._clickedCircle) {
+        selection.value = null;
+      }
+    });      
 
       // Legend
       legend.onAdd = function () {
@@ -185,7 +196,7 @@ const raceMap = (() => {
 ```
 <div class="grid grid-cols-2">
   <div class="card">
-    <div class="big">${filtered().length.toLocaleString()}</div>
+    <div class="big">${uniqueRaceCount}</div>
     <div class="muted">Available Races</div>
   </div>
 </div>
@@ -198,7 +209,6 @@ const raceMap = (() => {
 </div>
 
 <div class="grid grid-cols-2">
-
   <div class="card">
     <h2>Top 5 Winningest Horses</h2>
     ${clickablePlot({
@@ -289,6 +299,9 @@ const raceMap = (() => {
         Plot.ruleX([0])
       ]
     }, "jockey")}
-  </div>
+  </div>  
+</div>
 
+<div class="card">
+  ${Inputs.table(races, {rows: 16})}
 </div>
