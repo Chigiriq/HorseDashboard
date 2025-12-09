@@ -23,7 +23,7 @@ As some tracks have fewer races than others, raw data can be misleading (a horse
 ![Heatmap - Win Rate](./data/heatmap.png)
 ![Heatmap - Race Count](./data/heatmap2.png)
 
-## Analysis of Findings
+## Analysis
 
 ### 1. The "Unlucky Unicorn" Exists: Chukyo Racecourse
 Gambling is unfortunate
