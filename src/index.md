@@ -9,7 +9,7 @@ title: Races Dashboard
 
 ```js
 //---------------- Data ----------------
-const races = await FileAttachment("data/races.csv").csv({ typed: true });
+const races = await FileAttachment("data/racesUpdated.csv").csv({ typed: true });
 const raceIds = races.map(d => `${d.course}|${d.date}|${d.race_number}`);
 
 const selection = Mutable(null);
@@ -160,7 +160,8 @@ const mapContext = await (async () => {
     "#F7EE55", "#F6C141", "#F1932D",
     "#E8601C", "#DC050C", "#72190E",
     "#7F3C8D", "#11A579", "#3969AC",
-    "#F2B701", "#E73F74", "#80BA5A"
+    "#F2B701", "#E73F74", "#80BA5A",
+    "#3F007D"
   ];
 
   const sortedNames = courseData.map(d => d.course).sort(d3.ascending);
@@ -326,11 +327,32 @@ const heatmapPlot = (() => {
   `;
   container.append(select);
 
+  const legendHolder = html`<div style="margin-bottom: 5px;"></div>`;
+  container.append(legendHolder);
+
   const chartHolder = html`<div style="width:100%; display:flex; justify-content:center;"></div>`;
   container.append(chartHolder);
 
   function renderChart(metric) {
-    chartHolder.innerHTML = ""; // clear
+    legendHolder.innerHTML = "";
+    chartHolder.innerHTML = ""; 
+
+    const colorConfig = {
+      type: "linear",
+      scheme: "viridis",
+      domain: [0, .5],
+      clamp: true,
+      label: metric === "mean" ? "Adj Place Rate" : "Raw Place Rate",
+      tickFormat: d3.format(".0%")
+    };
+
+    //Standalone Legend
+    const legend = Plot.legend({
+      color: colorConfig,
+      width: 320
+    });
+    legend.style.background = "none"; 
+    legendHolder.append(legend);
 
     const chart = Plot.plot({
       height: 500,
@@ -348,13 +370,8 @@ const heatmapPlot = (() => {
         tickSize: 0
       },
       color: {
-        type: "linear",
-        scheme: "viridis",
-        domain: [0, .5],
-        clamp: true,
-        label: metric === "adjusted" ? "Adj Place Rate" : "Raw Place Rate",
-        legend: true,
-        tickFormat: d3.format(".0%")
+        ...colorConfig,
+        legend: false // DISABLE internal legend
       },
       style: {
         fontSize: "13px",
@@ -408,15 +425,12 @@ const heatmapPlot = (() => {
         }
       });
 
-    chartHolder.append(chart);
-
     d3.select(chart).selectAll("rect")
       .on("click", function(event, d) {
         if (selectedCell === this) {
           d3.select(selectedCell)
             .style("stroke", null)
             .style("stroke-width", null);
-
           selectedCell = null;
           return;
         }
@@ -436,6 +450,8 @@ const heatmapPlot = (() => {
 
         d3.select(chart).selectAll("text").raise();
       });
+
+    chartHolder.append(chart);
   }
 
   renderChart("mean");
@@ -463,10 +479,10 @@ const searchValue = Generators.input(search);
 
 <!-- ---------------- HEADER ---------------- -->
 <div style="margin-bottom: 2rem;">
-  <h1 style="margin-bottom: 0.5rem; font-weight: 700;">Japanese Horse Racing Analytics Dashboard</h1>
+  <h1 style="margin-bottom: 0.5rem; font-weight: 700;">Japanese Horse Racing Dashboard</h1>
   <div class="muted">
-    Comprehensive analysis of race outcomes, track bias, and participant performance. 
-    Interact with the map or charts to filter the dataset.
+    Rough analysis of race outcomes, track bias, and participant performance. 
+    Interact with the map to filter the dataset.
   </div>
 </div>
 
@@ -491,7 +507,7 @@ const searchValue = Generators.input(search);
     <h2>Racecourse Activity Map</h2>
     <div class="muted" style="margin-bottom: 10px;">
       Geographic distribution of racecourses. Circle size represents the volume of races recorded. 
-      <strong>Click a marker</strong> to filter the entire dashboard by that specific location.
+      <strong>Click a marker on the map or legend</strong> to filter the entire dashboard by that specific location.
     </div>
     ${mapContext.container}
   </div>
@@ -504,8 +520,7 @@ const searchValue = Generators.input(search);
   <div class="card">
     <h2>Top 5 Winningest Horses</h2>
     <div class="muted" style="margin-bottom: 10px;">
-      The highest performing horses based on total first-place finishes. 
-      Highlights dominance within the currently selected filters.
+      The highest performing horses based on total first-place finishes.
     </div>
     ${clickablePlot({
       height: 300,
@@ -530,8 +545,7 @@ const searchValue = Generators.input(search);
   <div class="card">
     <h2>Top 5 Winningest Jockeys</h2>
     <div class="muted" style="margin-bottom: 10px;">
-      Riders with the most victories. Useful for identifying consistent talent 
-      across different tracks and conditions.
+      The highest performing jockeys based on total first-place finishes.
     </div>
     ${clickablePlot({
       height: 300,
@@ -557,7 +571,7 @@ const searchValue = Generators.input(search);
     <h2>Top 5 Most Races (Horses)</h2>
     <div class="muted" style="margin-bottom: 10px;">
       Horses with the highest volume of starts. A measure of durability 
-      and frequency of competition rather than win rate.
+      and frequency of competition.
     </div>
     ${clickablePlot({
       height: 300,
@@ -582,8 +596,8 @@ const searchValue = Generators.input(search);
   <div class="card">
     <h2>Top 5 Most Races (Jockeys)</h2>
     <div class="muted" style="margin-bottom: 10px;">
-      Jockeys with the most rides. Indicates high utilization rates 
-      and availability across the selected dataset.
+      Jockeys with the highest volume of starts. A measure of rider talent 
+      and frequency of competition.
     </div>
     ${clickablePlot({
       height: 300,
@@ -612,7 +626,7 @@ const searchValue = Generators.input(search);
     This heatmap shows the place rate (top 3 finish %) by draw and racecourse. 
     Values use Bayesian smoothing to reduce noise from low-sample draws, so tracks 
     with only a few races don't appear artificially strong. Select a course on the 
-    map to highlight its row here.
+    map to highlight its row here. The dropdown allows toggling between the adjusted rates and raw rates.
   </div>
   ${heatmapPlot}
 </div>
@@ -621,7 +635,7 @@ const searchValue = Generators.input(search);
 <div class="card">
   <h2>Detailed Race Data</h2>
   <div class="muted" style="margin-bottom: 10px;">
-    Granular view of the filtered dataset. Use the search bar to find specific 
+    Overall view of the filtered dataset. Use the search bar to find specific 
     horses, jockeys, or dates.
   </div>
   
