@@ -1,11 +1,19 @@
 ---
 title: Races Dashboard
+theme: dashboard
+toc: false
 ---
 
 <link
   rel="stylesheet"
   href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
 />
+
+<style>
+:root {
+  --max-width: 100%; 
+}
+</style>
 
 ```js
 //---------------- Data ----------------
@@ -280,6 +288,8 @@ const mapContext = await (async () => {
 
 ```js
 //---------------- HeatMap ----------------
+const formatCourseName = (name) => name === "NAGOYA" ? "Nagoya" : name;
+
 const globalMean = d3.mean(
   races, 
   d => (+d.pos >= 1 && +d.pos <= 3) ? 1 : 0
@@ -287,7 +297,7 @@ const globalMean = d3.mean(
 
 const k = 5;
 
-// Weighted mean (Bayesian smoothed)
+//wt mean
 const drawBiasData = d3.rollups(
   races.filter(d => d.draw),
   v => {
@@ -295,7 +305,7 @@ const drawBiasData = d3.rollups(
     const wins = d3.sum(v, d => (+d.pos >= 1 && +d.pos <= 3) ? 1 : 0);
     const raw = wins / n;
 
-    // Empirical Bayes smoothing
+    //Bayes smoothing
     const adjusted = (n * raw + k * globalMean) / (n + k);
 
     return { raw, adjusted, count: n };
@@ -305,27 +315,62 @@ const drawBiasData = d3.rollups(
 )
 .map(([course, draws]) =>
   draws.map(([draw, stats]) => ({
-    course,
+    course: formatCourseName(course), //rename init
     draw,
     raw: stats.raw,
-    mean: stats.adjusted,  // smoothed mean
+    mean: stats.adjusted,
     count: stats.count
   }))
 )
 .flat();
 
-const courseOrder = d3.groupSort(races, g => -g.length, d => d.course);
+//rename in order
+const courseOrder = d3.groupSort(races, g => -g.length, d => formatCourseName(d.course));
 
 const heatmapPlot = (() => {
   const container = html`<div style="display:flex; flex-direction:column; align-items:center;"></div>`;
 
-  const select = html`
-    <select style="margin-bottom:10px;">
-      <option value="mean" selected>Adjusted</option>
-      <option value="raw">Raw</option>
-    </select>
+  const controls = html`<div style="margin-bottom:10px; display: flex; gap: 15px; align-items: center; flex-wrap: wrap;"></div>`;
+  
+  //mean type
+  const selectMetric = html`
+    <label style="font-size: 0.9em; font-weight: bold;">
+      Color: 
+      <select style="margin-left:5px;">
+        <option value="mean" selected>Adjusted</option>
+        <option value="raw">Raw</option>
+      </select>
+    </label>
   `;
-  container.append(select);
+
+  //cell content
+  const selectLabel = html`
+    <label style="font-size: 0.9em; font-weight: bold;">
+      Text: 
+      <select style="margin-left:5px;">
+        <option value="rate" selected>Win Rate</option>
+        <option value="count">Race Count</option>
+      </select>
+    </label>
+  `;
+
+  //tooltip
+  const selectTooltip = html`
+    <label style="font-size: 0.9em; font-weight: bold;">
+      Tooltip: 
+      <select style="margin-left:5px;">
+        <option value="all" selected>All Details</option>
+        <option value="rate">Rate Only</option>
+        <option value="count">Count Only</option>
+        <option value="none">Hidden</option>
+      </select>
+    </label>
+  `;
+
+  controls.append(selectMetric);
+  controls.append(selectLabel);
+  controls.append(selectTooltip);
+  container.append(controls);
 
   const legendHolder = html`<div style="margin-bottom: 5px;"></div>`;
   container.append(legendHolder);
@@ -333,7 +378,13 @@ const heatmapPlot = (() => {
   const chartHolder = html`<div style="width:100%; display:flex; justify-content:center;"></div>`;
   container.append(chartHolder);
 
-  function renderChart(metric) {
+  const activeCourse = selection?.type === "course" ? formatCourseName(selection.value) : null;
+
+  function renderChart() {
+    const metric = selectMetric.querySelector("select").value;
+    const labelMode = selectLabel.querySelector("select").value;
+    const tooltipMode = selectTooltip.querySelector("select").value;
+
     legendHolder.innerHTML = "";
     chartHolder.innerHTML = ""; 
 
@@ -346,7 +397,6 @@ const heatmapPlot = (() => {
       tickFormat: d3.format(".0%")
     };
 
-    //Standalone Legend
     const legend = Plot.legend({
       color: colorConfig,
       width: 320
@@ -371,7 +421,7 @@ const heatmapPlot = (() => {
       },
       color: {
         ...colorConfig,
-        legend: false // DISABLE internal legend
+        legend: false
       },
       style: {
         fontSize: "13px",
@@ -384,22 +434,32 @@ const heatmapPlot = (() => {
           fill: metric,
           inset: 0.51,
           fillOpacity: d =>
-            selection?.type === "course" &&
-            selection.value !== d.course ? 0.15 : 1,
-          title: null,
-          tip: false
+            activeCourse && activeCourse !== d.course ? 0.15 : 1,
+          
+          title: d => {
+            if (tooltipMode === "none") return null;
+
+            const rateStr = d3.format(".1%")(d[metric]);
+
+            if (tooltipMode === "rate") return `Rate: ${rateStr}`;
+            if (tooltipMode === "count") return `Races: ${d.count}`;
+            
+            return `Draw: ${d.draw}\nRaces: ${d.count}\nRate: ${rateStr}`;
+          },
+          tip: tooltipMode !== "none"
         }),
 
         Plot.text(drawBiasData, {
           x: "course",
           y: "draw",
-          text: d => d3.format(".0%")(d[metric]),
+          text: d => labelMode === "count" 
+            ? d.count 
+            : d3.format(".0%")(d[metric]), 
           fill: d => d[metric] > 0.25 ? "black" : "darkgray",
           fontWeight: "bold",
           fontSize: 10,
           filter: d =>
-            !(selection?.type === "course" &&
-              selection.value !== d.course),
+            !(activeCourse && activeCourse !== d.course),
           pointerEvents: "none"
         })
       ]
@@ -423,9 +483,7 @@ const heatmapPlot = (() => {
             .style("stroke", null)
             .style("stroke-width", null);
         }
-      });
-
-    d3.select(chart).selectAll("rect")
+      })
       .on("click", function(event, d) {
         if (selectedCell === this) {
           d3.select(selectedCell)
@@ -454,11 +512,11 @@ const heatmapPlot = (() => {
     chartHolder.append(chart);
   }
 
-  renderChart("mean");
+  renderChart();
 
-  select.addEventListener("change", e => {
-    renderChart(e.target.value);
-  });
+  selectMetric.addEventListener("change", renderChart);
+  selectLabel.addEventListener("change", renderChart);
+  selectTooltip.addEventListener("change", renderChart);
 
   return container;
 })();
@@ -484,7 +542,6 @@ const searchValue = Generators.input(search);
     Rough analysis of race outcomes, track bias, and participant performance. 
     Interact with the map to filter the dataset.
   </div>
-</div>
 
 <!-- ---------------- KPI CARDS ---------------- -->
 <div class="grid grid-cols-2" style="margin-bottom: 1rem;">
@@ -596,7 +653,7 @@ const searchValue = Generators.input(search);
   <div class="card">
     <h2>Top 5 Most Races (Jockeys)</h2>
     <div class="muted" style="margin-bottom: 10px;">
-      Jockeys with the highest volume of starts. A measure of rider talent 
+      Jockeys with the highest volume of starts. A measure of rider consistency 
       and frequency of competition.
     </div>
     ${clickablePlot({
@@ -626,7 +683,7 @@ const searchValue = Generators.input(search);
     This heatmap shows the place rate (top 3 finish %) by draw and racecourse. 
     Values use Bayesian smoothing to reduce noise from low-sample draws, so tracks 
     with only a few races don't appear artificially strong. Select a course on the 
-    map to highlight its row here. The dropdown allows toggling between the adjusted rates and raw rates.
+    map to highlight its row here. The dropdown allows toggling between the adjusted rates and raw rates. Note: toggling 'Win Rate' does not change color scale to avoid disorienting viewer when checking the amount of races a particular stall had.
   </div>
   ${heatmapPlot}
 </div>
