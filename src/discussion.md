@@ -1,7 +1,7 @@
 # Discussion: The Impact of Draw Bias
 <br>
 
-## The "hidden" variable straight in front of your eyes: Draw Bias
+## The "hidden" variable: Draw Bias
 In horse racing, a critical yet often overlooked factor is the starting position. 
 Each slot within the starting gate is referred to as a <strong>"draw"</strong> or stall. 
 These stalls are randomly assigned, a gamble which can make or break a race before the gates even open.
