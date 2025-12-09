@@ -1,7 +1,7 @@
 # Discussion: The Impact of Draw Bias
 <br>
 
-## The "hidden" variable: Draw Bias
+## Hypothesis
 In horse racing, a critical yet often overlooked factor is the starting position. 
 Each slot within the starting gate is referred to as a <strong>"draw"</strong> or stall. 
 These stalls are randomly assigned, a gamble which can make or break a race before the gates even open.
@@ -9,7 +9,7 @@ A horse drawn on the <strong>inside</strong> (low numbers) runs the shortest dis
 but risks getting "boxed in" behind slower competitors. Conversely, a horse on the <strong>outside</strong> 
 (high numbers) enjoys a clear path but is often forced to run wide, covering significantly more ground on the turns.
 <br><br>
-<em>Common racing lore suggests that certain stalls are "cursed" while others are "golden tickets."</em> 
+<em>Common racing lore suggests that certain stalls are "cursed" while others are "golden tickets".</em> 
 This dashboard tests that theory against the data. Is there a "unicorn" racecourse where the starting position is truly irrelevant? 
 Or does the data reveal specific tracks where drawing an "unlucky" number statistically eliminates a horse's chance of winning?
 
