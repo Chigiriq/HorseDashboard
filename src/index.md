@@ -525,7 +525,7 @@ const heatmapPlot = (() => {
 
 ```js
 //---------------- Data Table ----------------
-const visibleColumns = ["date",	"region","course",	"off", "race_name",	"type",	"class", 	"pattern", "rating_band",	"age_band",	"sex_rest",	"dist",	"dist_f",	"dist_m",	"going",	"surface",	"ran",	"num",	"pos",	"draw",	"ovr_btn",	"btn",	"horse",	"age",	"sex",	"lbs",	"hg",	"time",	"secs",	"dec",	"jockey",	"trainer",	"prize",	"or",	"rpr",	"sire",	"dam",	"damsire",	"owner"];
+const visibleColumns = ["region","course",	"off", "race_name",	"type",	"class", 	"pattern", "rating_band",	"age_band",	"sex_rest",	"dist",	"dist_f",	"dist_m",	"going",	"surface",	"ran",	"num",	"pos",	"draw",	"ovr_btn",	"btn",	"horse",	"age",	"sex",	"lbs",	"hg",	"time",	"secs",	"dec",	"jockey",	"trainer",	"prize",	"or",	"rpr",	"sire",	"dam",	"damsire",	"owner"];
 
 const search = Inputs.search(filtered, {
   placeholder: "Search by course, horse, jockey…",
@@ -540,7 +540,7 @@ const searchValue = Generators.input(search);
   <h1 style="margin-bottom: 0.5rem; font-weight: 700;">Japanese Horse Racing Dashboard</h1>
   <div class="muted">
     Rough analysis of race outcomes, track bias, and participant performance. 
-    Interact with the map to filter the dataset.
+    Interact with the map to filter the dataset. Data is from 2017-2024.
   </div>
 
 <!-- ---------------- KPI CARDS ---------------- -->
